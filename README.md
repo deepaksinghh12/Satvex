@@ -1,120 +1,111 @@
 # 🛰️ SAT-VEX — Satellite Tracking & Footprint Prediction System
 
-**SAT-VEX** is a satellite tracking application developed as **Module 1 of our Smart India Hackathon (SIH) 2025 Winning Project**.  
-The system visualizes satellite positions in real time using **CesiumJS**, leveraging **TLE (Two-Line Element) data** for orbital estimation and **Machine Learning models** to enhance positional accuracy and predict satellite ground footprints.
+**SAT-VEX** is an advanced satellite tracking and visualization system developed as an **individual project**.  
+The project focuses on **real-time satellite position estimation**, **orbit propagation using TLE data**, and **ground footprint prediction**, with enhancements using **machine learning–based correction models**.
 
-🏆 **Winner — Smart India Hackathon 2025**  
-📍 **Venue:** Mysuru, Karnataka, India
+This project originated as **Module 1 of a Smart India Hackathon (SIH) 2025 winning solution**, and has been independently extended and maintained.
 
 ---
 
 ## 🚀 Project Overview
 
-SATVEX is designed to:
-- Track satellites in real time
-- Predict future satellite positions
-- Improve orbital accuracy using ML-based correction models
-- Predict satellite **ground footprints** for coverage analysis
+SAT-VEX is designed to:
 
-The platform is aimed at **Space Situational Awareness (SSA)**, satellite monitoring, and future defense and civilian applications.
+- Track satellites in real time on a 3D globe  
+- Predict future satellite positions using orbital mechanics  
+- Improve orbital accuracy using ML-based correction models  
+- Estimate satellite **ground footprints** for coverage analysis  
+
+The system targets applications in **Space Situational Awareness (SSA)**, satellite monitoring, and space-tech research.
 
 ---
 
 ## 🧠 Key Features
 
 - 🌍 **3D Satellite Visualization**
-  - Powered by **CesiumJS**
-  - Realistic Earth rendering with orbital paths
+  - Interactive 3D Earth powered by **CesiumJS**
+  - Real-time satellite position and orbital path rendering
 
 - 📡 **TLE-Based Orbit Propagation**
-  - Uses standard Two-Line Element sets
+  - Uses standard **Two-Line Element (TLE)** data
   - Compatible with NORAD satellite catalogs
+  - Time-based forward and backward propagation
 
-- 🤖 **Machine Learning Enhancement**
-  - Reduces error in traditional orbital propagation
-  - Improves location estimation over time
+- 🤖 **Machine Learning–Assisted Correction**
+  - Reduces positional drift in classical SGP4 predictions
+  - Improves long-term accuracy through learned corrections
 
-- 📐 **Footprint Prediction**
+- 📐 **Ground Footprint Prediction**
   - Estimates satellite ground coverage area
-  - Useful for communication, imaging, and surveillance satellites
+  - Useful for communication, imaging, and surveillance analysis
 
-- ⏱️ **Time-Based Position Tracking**
-  - Satellite position at any given timestamp
-  - Forward and backward propagation
+- ⏱️ **Time-Aware Tracking**
+  - Query satellite position at any timestamp
+  - Supports future position prediction
 
 ---
 
 ## 🏗️ Tech Stack
 
-| Layer             | Technology                                        |
-|-------------------|---------------------------------------------------|
-| Frontend          | CesiumJS, JavaScript, HTML, CSS                   |
-| Backend           | Python (API-based architecture)                   |
-| Orbit Calculation | TLE + SGP4                                        |
-| Machine Learning  | Python (ML models for correction & prediction)    |
-| Visualization     | Cesium 3D Globe                                   |
+| Layer             | Technology                                      |
+|------------------|--------------------------------------------------|
+| Frontend         | CesiumJS, JavaScript, HTML, CSS                 |
+| Backend          | Python (API-based architecture)                 |
+| Orbit Mechanics  | TLE + SGP4                                     |
+| Machine Learning | Python (correction & prediction models)         |
+| Visualization    | Cesium 3D Globe                                 |
 
 ---
 
-## 🧩 Project Module
+## 🧩 Project Scope
 
-### **Module 1 — Satellite Tracking & Footprint Prediction**
-This module focuses on:
-- Accurate satellite position estimation
-- ML-assisted orbit correction
-- Ground footprint prediction and visualization
+### Satellite Tracking & Footprint Prediction
+This project focuses on:
 
----
-
-## 👥 Team Members
-
-- **Akshat Sharma**  
-- **Lakshya Sharma**  
-- **Deepak Singh**
-- **Mayank Saini**
+- Accurate satellite position estimation  
+- ML-assisted orbit correction  
+- Satellite ground footprint computation and visualization  
 
 ---
 
-## 🏆 Smart India Hackathon 2025
+## 👤 Author
 
-- **Event:** Smart India Hackathon (SIH) 2025 
-- **Team Name:** DigiShakti
-- **PS ID:** SIH 25142
-- **Problem Statement:** Prediction of satellite tracking along with space weather acivity forecasting (CME & Geomagnetic Storm Prediction)
-- **Status:** 🥇 Winner  
-- **Location:** Mysuru, Karnataka 
-- **Theme:** Space Technology / Satellite Applications
+**Deepak Singh**  
+B.Tech Computer Science Engineering  
+Full-Stack & AI Developer  
 
----
-
-## 🔗 Links
-
-- 🔗 **GitHub Repository:**  
-  👉 [SatVex GitHub Repo](https://github.com/Akshat-Sharma-02/SatVex.git)
-
-- 💼 **LinkedIn Profiles:**  
-  - Akshat Sharma: [Akshat's LinkedIn](https://www.linkedin.com/in/akshat-sharma-65b36b259/)
-  - Lakshya Sharma: [Lakshya's LinkedIn](https://www.linkedin.com/in/lakshya107/) 
-  - Deepak Singh: [Deepak's LinkedIn](https://www.linkedin.com/in/deepaksinghh12/)
-  - Mayank Saini: [Mayank's LinkedIn](https://www.linkedin.com/in/mayank-saini-a23b91203/)
+- 💼 LinkedIn: https://www.linkedin.com/in/deepaksinghh12  
+- 🧑‍💻 GitHub: https://github.com/deepaksinghh12  
 
 ---
 
-## 📌 Future Scope
+## 🏆 Background (Smart India Hackathon 2025)
 
-- Multi-satellite tracking
-- Collision avoidance alerts
-- Integration with real-time SSA networks
-- Defense and disaster-management applications
-- Web + Mobile unified platform
+- **Event:** Smart India Hackathon (SIH) 2025  
+- **Problem Statement:** Prediction of satellite tracking along with space weather activity forecasting (CME & geomagnetic storms)  
+- **Achievement:** 🥇 Winning solution contributor  
+
+> SAT-VEX represents the **satellite-tracking and visualization module** of the original SIH solution, now evolved as an independent project.
+
+---
+
+## 🔮 Future Scope
+
+- Multi-satellite tracking & constellation visualization  
+- Collision avoidance and proximity alerts  
+- Integration with real-time SSA data sources  
+- Defense, disaster-management, and civilian applications  
+- Unified Web + Mobile platform  
 
 ---
 
 ## 📜 License
 
-This project is developed as part of **Smart India Hackathon 2025**.  
-All rights reserved © 2025 — Team DigiShakti
+This project is independently maintained by **Deepak Singh**.  
+Originally developed during **Smart India Hackathon 2025**.  
+
+© 2025 — All rights reserved.
 
 ---
 
-✨ *From midnight debugging to national victory — SIH 2025*
+✨ *From midnight debugging to national-level innovation.*
