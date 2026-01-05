@@ -106,6 +106,25 @@ input,select{
     border:1px solid var(--glass-border);
 }
 
+/* Style native selects so their selected value is visible and high-contrast */
+select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    color: #ffffff;
+    padding-right:40px;
+    background-position: calc(100% - 12px) center;
+    background-repeat: no-repeat;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12'><path d='M2 4l4 4 4-4' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+}
+
+select:focus{
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(150,150,255,0.06);
+    border-color: rgba(200,200,255,0.2);
+}
+
 input:focus,select:focus{
     outline:none;
     border-color:#aaa;
@@ -301,6 +320,7 @@ function searchPasses() {
         }
     });
 }
+
 
 function showError(msg){
     const box = document.getElementById("error-message");

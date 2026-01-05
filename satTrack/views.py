@@ -8,7 +8,6 @@ from django.utils import timezone
 from django.views.generic.list import ListView
 from django.urls import reverse
 from .models import Satellite, Sensor, TLE
-from skyfield.api import load, wgs84, EarthSatellite
 from datetime import datetime, timedelta
 import requests
 from .satellite_data_api import SatelliteDataManager, BhuvanAPI
@@ -225,6 +224,19 @@ def calculate_passes_view(request):
     
     # Get all satellites
     satellites = Satellite.objects.all()
+
+    # Quick mitigation: limit number of satellites processed per request
+    try:
+        max_satellites = int(request.GET.get('max_satellites', 50))
+    except Exception:
+        max_satellites = 50
+
+    # Cache results per (location,hours,min_elevation,max_satellites) to avoid
+    # recalculating on repeated requests. Short TTL keeps data reasonably fresh.
+    cache_key = f"passes:{location_name}:{hours_ahead}:{min_elevation}:{max_satellites}"
+    cached = cache.get(cache_key)
+    if cached:
+        return JsonResponse(cached)
     
     results = {
         'location': location_data['display_name'],
@@ -235,12 +247,16 @@ def calculate_passes_view(request):
         'satellites': []
     }
     
+    # Import skyfield lazily to avoid network/cert operations at module import
+    from skyfield.api import load, wgs84, EarthSatellite
+
     ts = load.timescale()
     observer = wgs84.latlon(observer_lat, observer_lon, observer_alt)
     t0 = ts.now()
     t1 = ts.utc(t0.utc_datetime() + timedelta(hours=hours_ahead))
     
-    for satellite in satellites:
+    # Slice the queryset to only process up to `max_satellites` items.
+    for satellite in satellites[:max_satellites]:
         if not satellite.tle_now:
             continue
         
@@ -316,11 +332,16 @@ def calculate_passes_view(request):
                     'norad_id': satellite.norad_id,
                     'passes': passes
                 })
-        
+
         except Exception as e:
             print(f"Error calculating passes for {satellite.name}: {e}")
             continue
-    
+    # Cache for 10 minutes
+    try:
+        cache.set(cache_key, results, timeout=60 * 10)
+    except Exception:
+        pass
+
     return JsonResponse(results)
 
 
@@ -353,6 +374,9 @@ def get_satellite_dem(request, norad_id):
         if len(tle_lines) < 2:
             return JsonResponse({'error': 'Invalid TLE data'}, status=400)
         
+        # Lazy import skyfield here
+        from skyfield.api import load, EarthSatellite
+
         ts = load.timescale()
         sat = EarthSatellite(tle_lines[0], tle_lines[1], satellite.name, ts)
         t = ts.now()

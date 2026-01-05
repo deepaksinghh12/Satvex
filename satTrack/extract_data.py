@@ -2,8 +2,8 @@ from sgp4.api import Satrec
 from sgp4.api import jday 
 import pandas as pd 
 import numpy as np
-from skyfield.api import EarthSatellite, Loader
-from skyfield.api import load, wgs84
+# Delay importing heavy skyfield modules until runtime to avoid network/cert
+# operations at import time (which can block server startup).
 import matplotlib.pyplot as plt 
 import math
 import requests
@@ -94,13 +94,15 @@ def convert(TLE):
 
 
 def load_satellite(TLE):
-    load = Loader('~/Documents/fishing/SkyData')
-    ts = load.timescale() 
+    from skyfield.api import EarthSatellite, Loader
+    loader = Loader('~/Documents/fishing/SkyData')
+    ts = loader.timescale()
     L1, L2 = TLE.splitlines()
     SATELLITE = EarthSatellite(L1, L2)
     return SATELLITE, ts
 
 def get_azimuth_altitude_distance_ra_dec(SATELLITE, time, cur_loc):
+    from skyfield.api import wgs84
     bluffton = wgs84.latlon(float(cur_loc['lat']), float(cur_loc['lon']))
     difference = SATELLITE - bluffton
     topocentric = difference.at(time)
@@ -109,6 +111,8 @@ def get_azimuth_altitude_distance_ra_dec(SATELLITE, time, cur_loc):
     return (alt, az, distance, ra, dec)
 
 def get_geodetic_coordinates(SATELLITE, time):
+    # wgs84 is only needed when converting geocentric positions; import lazily
+    from skyfield.api import wgs84
     SAT_geo_pos = SATELLITE.at(time).position.m
     x,y,z = SAT_geo_pos
     data=[]
@@ -121,8 +125,8 @@ def get_geodetic_coordinates(SATELLITE, time):
 
 
 def get_live_data(TLE, cur_loc=None):
-    
     SATELLITE, ts = load_satellite(TLE)
+    from skyfield.api import wgs84
     
     time = ts.now()
     if cur_loc:
@@ -149,6 +153,7 @@ def get_live_data(TLE, cur_loc=None):
 
 def data_over_time(TLE, minutes_to_project=94):
     SATELLITE, ts = load_satellite(TLE)
+    from skyfield.api import wgs84
 
     now = ts.now()
     minutes = np.arange(now.utc.minute, now.utc.minute + (minutes_to_project*5), 2)
@@ -173,6 +178,7 @@ def data_over_time(TLE, minutes_to_project=94):
 
 def get_position(TLE, time):
     SATELLITE, ts = load_satellite(TLE)
+    from skyfield.api import wgs84
     time = datetime.fromisoformat(time)
     timest = ts.utc(time.year, time.month, time.day, time.hour, time.minute, time.second)
     geocentric = SATELLITE.at(timest)
