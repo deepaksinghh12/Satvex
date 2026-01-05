@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+<meta charset="utf-8">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<style>
+/* ================= TWINKLING STAR BACKGROUND ================= */
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        radial-gradient(white 1px, transparent 1px),
+        radial-gradient(#bbb 1px, transparent 1px),
+        radial-gradient(#888 1px, transparent 1px);
+    background-size: 3px 3px, 5px 5px, 7px 7px;
+    animation: twinkle 6s infinite alternate ease-in-out;
+    opacity: 0.8;
+    z-index: -2;
+}
+
+body::after {
+    animation-duration: 9s;
+    opacity: 0.5;
+}
+
+@keyframes twinkle {
+    0%   { opacity: 0.3; }
+    50%  { opacity: 0.8; }
+    100% { opacity: 0.4; }
+}
+
+/* ================= DARK GLASS THEME (NO NEON) ================= */
+:root{
+    --glass-bg: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.15);
+    --text-main: #e6e6f0;
+}
+
+body{
+    background: radial-gradient(circle at top, #18182f, #05040c 70%);
+    color: var(--text-main);
+    overflow-x: hidden;
+}
+
+.container{
+    max-width:1400px;
+    margin:auto;
+    padding:25px;
+    font-family:'Segoe UI',sans-serif;
+}
+
+.glass{
+    background:var(--glass-bg);
+    backdrop-filter: blur(14px);
+    border:1px solid var(--glass-border);
+    border-radius:16px;
+    box-shadow:0 0 20px rgba(0,0,0,0.6);
+}
+
+/* ================= HEADER ================= */
+.header{
+    padding:40px;
+    margin-bottom:30px;
+    text-align:center;
+}
+.header h1{
+    font-size:2.6em;
+    margin-bottom:10px;
+    color:#f1f1f1;
+}
+.header p{opacity:0.85}
+
+/* ================= SEARCH ================= */
+.search-section{
+    padding:30px;
+    margin-bottom:30px;
+}
+
+.search-form{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.form-group{
+    flex:1;
+    min-width:200px;
+}
+
+label{
+    display:block;
+    margin-bottom:6px;
+    font-weight:600;
+}
+
+input,select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    background:rgba(255,255,255,0.1);
+    color:white;
+    border:1px solid var(--glass-border);
+}
+
+input:focus,select:focus{
+    outline:none;
+    border-color:#aaa;
+}
+
+/* ================= BUTTON ================= */
+.search-btn{
+    background: linear-gradient(135deg, #dcdcdc, #9a9a9a);
+    border:none;
+    padding:12px 40px;
+    border-radius:30px;
+    font-weight:700;
+    color:black;
+    cursor:pointer;
+    margin-top:26px;
+    transition:0.3s;
+}
+
+.search-btn:hover{
+    transform:scale(1.05);
+}
+
+/* ================= LOADING ================= */
+.loading{
+    display:none;
+    text-align:center;
+    padding:50px;
+}
+
+.spinner{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    border:4px solid rgba(255,255,255,.1);
+    border-top:4px solid white;
+    animation:spin 1s linear infinite;
+    margin:auto;
+}
+@keyframes spin{100%{transform:rotate(360deg)}}
+
+/* ================= RESULTS ================= */
+.location-info{padding:20px;margin-bottom:25px;}
+
+.satellite-card{margin-bottom:25px;}
+
+.satellite-header{
+    padding:20px;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+}
+
+.badge{
+    padding:6px 15px;
+    border-radius:20px;
+    background:rgba(255,255,255,.2);
+}
+
+.passes-container{display:none;padding:20px;}
+
+.pass-card{
+    margin-bottom:15px;
+    padding:20px;
+    border-radius:12px;
+}
+
+.pass-card.excellent{background:rgba(80,180,120,0.18);}
+.pass-card.good{background:rgba(200,180,80,0.18);}
+.pass-card.fair{background:rgba(200,120,80,0.18);}
+
+.pass-header{display:flex;justify-content:space-between;}
+
+.elevation-badge{
+    background:#b0b0b0;
+    padding:5px 15px;
+    border-radius:20px;
+    color:black;
+}
+
+.pass-details{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:15px;
+}
+
+.detail-label{font-size:0.85em;opacity:0.7}
+.detail-value{font-weight:bold}
+
+/* ================= INFO ================= */
+.info-box{margin-top:40px;padding:25px;}
+
+.toggle-icon{transition:0.4s;}
+.toggle-icon.rotated{transform:rotate(180deg);}
+
+.error-message{
+    background:rgba(255,0,0,0.15);
+    padding:15px;
+    border-left:4px solid red;
+    display:none;
+    margin-bottom:20px;
+}
+</style>
+{% endblock head %}
+
+{% block content %}
+<div class="container">
+
+<div class="header glass">
+    <h1>🛰️ Satellite Pass Predictor</h1>
+    <p>Find out when satellites will pass over your location</p>
+</div>
+
+<div class="search-section glass">
+    <div class="search-form">
+        <div class="form-group">
+            <label>📍 Location</label>
+            <input type="text" id="location" placeholder="Alwar, Rajasthan, India">
+        </div>
+
+        <div class="form-group">
+            <label>⏰ Time Range</label>
+            <select id="hours">
+                <option value="24">24 Hours</option>
+                <option value="48" selected>48 Hours</option>
+                <option value="72">72 Hours</option>
+                <option value="168">7 Days</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>📐 Min Elevation</label>
+            <select id="min_elevation">
+                <option value="5">5°</option>
+                <option value="10" selected>10°</option>
+                <option value="20">20°</option>
+                <option value="30">30°</option>
+            </select>
+        </div>
+
+        <button class="search-btn" onclick="searchPasses()">Find Passes</button>
+    </div>
+</div>
+
+<div class="error-message" id="error-message"></div>
+
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Calculating satellite passes...</p>
+</div>
+
+<div class="results-section" id="results">
+    <div class="location-info glass" id="location-info"></div>
+    <div id="satellites-list"></div>
+</div>
+    
+<div class="info-box glass">
+    <h4>💡 Pass Quality Guide</h4>
+    <ul>
+        <li>🟢 Above 50° – Excellent</li>
+        <li>🟡 30° to 50° – Good</li>
+        <li>🟠 Below 30° – Fair</li>
+    </ul>
+</div>
+
+</div>
+
+<script>
+function searchPasses() {
+    const location = document.getElementById('location').value.trim();
+    const hours = document.getElementById('hours').value;
+    const minElevation = document.getElementById('min_elevation').value;
+
+    if (!location) {
+        showError("Please enter a location");
+        return;
+    }
+
+    $('#error-message').hide();
+    $('#results').hide();
+    $('#loading').show();
+
+    $.ajax({
+        url: "{% url 'calculate_passes' %}",
+        type: "GET",
+        data: { location, hours, min_elevation: minElevation },
+        success: function(data) {
+            $('#loading').hide();
+            displayResults(data);
+        },
+        error: function() {
+            $('#loading').hide();
+            showError("Failed to load satellite passes.");
+        }
+    });
+}
+
+function showError(msg){
+    const box = document.getElementById("error-message");
+    box.innerText = msg;
+    box.style.display = "block";
+}
+
+function displayResults(data) {
+    const locationInfo = document.getElementById('location-info');
+    const satellitesList = document.getElementById('satellites-list');
+
+    locationInfo.innerHTML = `
+        <h3>📍 ${data.location}</h3>
+        <p><strong>Coordinates:</strong> ${data.coordinates.lat.toFixed(4)}°, ${data.coordinates.lon.toFixed(4)}°</p>
+    `;
+
+    let html = '';
+    if (data.satellites.length === 0) {
+        html = `<p style="text-align:center;">No passes found</p>`;
+    } else {
+        data.satellites.forEach((sat, index) => {
+            html += createSatelliteCard(sat, index);
+        });
+    }
+
+    satellitesList.innerHTML = html;
+    document.getElementById('results').style.display = "block";
+}
+
+function createSatelliteCard(satellite, index) {
+    let html = `
+        <div class="satellite-card glass">
+            <div class="satellite-header" onclick="togglePasses(${index})">
+                <h3>🛰️ ${satellite.name}</h3>
+                <div>
+                    <span class="badge">${satellite.passes.length} passes</span>
+                    <span class="toggle-icon" id="toggle-${index}">▼</span>
+                </div>
+            </div>
+            <div class="passes-container" id="passes-${index}">
+    `;
+
+    satellite.passes.forEach((pass, i) => {
+        const quality = pass.max_elevation >= 50 ? "excellent" :
+                        pass.max_elevation >= 30 ? "good" : "fair";
+
+        html += `
+            <div class="pass-card ${quality}">
+                <div class="pass-header">
+                    <div>Pass #${i+1}</div>
+                    <div class="elevation-badge">Max: ${pass.max_elevation}°</div>
+                </div>
+                <div class="pass-details">
+                    <div><div class="detail-label">Rise</div><div class="detail-value">${pass.rise_ist}</div></div>
+                    <div><div class="detail-label">Max</div><div class="detail-value">${pass.max_ist}</div></div>
+                    <div><div class="detail-label">Set</div><div class="detail-value">${pass.set_ist}</div></div>
+                    <div><div class="detail-label">Duration</div><div class="detail-value">${pass.duration} min</div></div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div></div>`;
+    return html;
+}
+
+function togglePasses(index) {
+    const box = document.getElementById(`passes-${index}`);
+    const icon = document.getElementById(`toggle-${index}`);
+
+    if (box.style.display === "block") {
+        box.style.display = "none";
+        icon.classList.remove("rotated");
+    } else {
+        box.style.display = "block";
+        icon.classList.add("rotated");
+    }
+}
+</script>
+{% endblock content %}

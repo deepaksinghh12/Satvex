@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Bhuvan WMS</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial; }
+        #map { height: 600px; width: 100%; }
+        .controls { margin-bottom: 20px; }
+        select, button { padding: 8px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Bhuvan WMS Layer Test</h1>
+    <div class="controls">
+        <label>Select Layer:</label>
+        <select id="layerSelect">
+            <option value="india3">India Composite (india3)</option>
+            <option value="resourcesat2" selected>Resourcesat-2 (resourcesat2)</option>
+            <option value="cartosat1">Cartosat-1 (cartosat1)</option>
+            <option value="dem">DEM (dem)</option>
+            <option value="lulc">Land Use (lulc)</option>
+        </select>
+        <button onclick="changeLayer()">Change Layer</button>
+        <button onclick="testGetMap()">Test GetMap</button>
+    </div>
+    <div id="map"></div>
+    <div id="status" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+
+    <script>
+        let map, wmsLayer;
+        const proxyUrl = '/proxy/wms';
+
+        function initMap() {
+            // Center on India
+            map = L.map('map').setView([20.5937, 78.9629], 5);
+            
+            // Base layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // Add initial WMS layer
+            addWMSLayer('resourcesat2');
+        }
+
+        function addWMSLayer(layerName) {
+            if (wmsLayer) {
+                map.removeLayer(wmsLayer);
+            }
+
+            document.getElementById('status').innerHTML = 
+                `<strong>Loading layer:</strong> ${layerName}<br>` +
+                `<strong>URL:</strong> ${proxyUrl}<br>` +
+                `<em>Loading tiles...</em>`;
+
+            wmsLayer = L.tileLayer.wms(proxyUrl, {
+                layers: layerName,
+                format: 'image/png',
+                transparent: true,
+                version: '1.1.1',
+                attribution: 'Bhuvan / NRSC'
+            });
+
+            wmsLayer.on('tileload', function() {
+                document.getElementById('status').innerHTML = 
+                    `<strong>✅ Layer loaded successfully:</strong> ${layerName}`;
+            });
+
+            wmsLayer.on('tileerror', function(error) {
+                document.getElementById('status').innerHTML = 
+                    `<strong>❌ Error loading tiles:</strong> ${layerName}<br>` +
+                    `Check console for details`;
+                console.error('Tile error:', error);
+            });
+
+            wmsLayer.addTo(map);
+        }
+
+        function changeLayer() {
+            const layerName = document.getElementById('layerSelect').value;
+            addWMSLayer(layerName);
+        }
+
+        function testGetMap() {
+            const layerName = document.getElementById('layerSelect').value;
+            const url = `${proxyUrl}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=${layerName}&BBOX=77,28,78,29&WIDTH=512&HEIGHT=512&SRS=EPSG:4326&FORMAT=image/png`;
+            
+            document.getElementById('status').innerHTML = 
+                `<strong>Testing GetMap request...</strong><br>` +
+                `<strong>Layer:</strong> ${layerName}<br>` +
+                `<strong>URL:</strong> <a href="${url}" target="_blank">Open in new tab</a><br>` +
+                `<em>Check if image loads...</em>`;
+            
+            window.open(url, '_blank');
+        }
+
+        initMap();
+    </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+/* ================= DARK GLASS THEME ================= */
+:root{
+    --glass-bg: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.15);
+    --text-main: #e6e6f0;
+}
+
+body{
+    background: radial-gradient(circle at top, #18182f, #05040c 70%);
+    color: var(--text-main);
+    overflow-x: hidden;
+    margin: 0;
+}
+
+/* ================= MAIN CONTAINER ================= */
+.about-container{
+    max-width:1200px;
+    margin:80px auto;
+    padding:25px;
+    font-family:'Segoe UI',sans-serif;
+}
+
+.glass{
+    background:var(--glass-bg);
+    backdrop-filter: blur(14px);
+    border:1px solid var(--glass-border);
+    border-radius:16px;
+    box-shadow:0 0 20px rgba(0,0,0,0.6);
+}
+
+/* ================= HEADING ================= */
+.heading{
+    font-size:60px;
+    text-align:center;
+    font-weight:900;
+    color:#f1f1f1;
+    margin-bottom:40px;
+}
+
+.heading span{
+    color:#bdbdbd;
+}
+
+/* ================= CONTENT ================= */
+.about-body{
+    padding:35px;
+    line-height:1.7;
+}
+
+.first-para{
+    font-size:20px;
+    margin-bottom:20px;
+}
+
+.second-para,
+.third-para,
+.fourth-para{
+    font-size:18px;
+    margin-bottom:18px;
+}
+
+.about-body h3{
+    margin-top:25px;
+    margin-bottom:10px;
+    font-size:22px;
+    color:#eaeaea;
+}
+
+/* ================= RESPONSIVE ================= */
+@media(max-width:768px){
+    .heading{font-size:40px;}
+    .first-para{font-size:18px;}
+    .second-para,
+    .third-para,
+    .fourth-para{font-size:16px;}
+}
+</style>
+
+<main>
+    <div class="about-container glass">
+
+        <h1 class="heading">About <span>SatTrack</span></h1>
+
+        <div class="about-body">
+
+            <p class="first-para">
+                This Web Application takes the input from the user and database for a desired Indian satellite and based on
+                the inputs specified by the user, projects the orbital positions on the Earth’s surface to generate the
+                sensor footprint.
+            </p>
+
+            <p class="second-para">
+                Following are the inputs which can be provided by the user to the application to guide them
+                for determining the imaging opportunities: <br><br>
+                1) Coordinates of point of interest in terms of Latitude and Longitude on Earth. <br>
+                2) Sensor within the payload. <br>
+                3) Possible swath which can be imaged with the particular sensor. <br>
+                4) Tilt of the satellite within the known agility of the platform. <br>
+                5) Orbital parameters like semi-major axis, eccentricity, inclination, longitude of ascending node,
+                argument of perigee and true anomaly based on the publicly available information in the form
+                of Two Line Elements (TLE).
+            </p>
+
+            <h3>Objective :</h3>
+            <p class="third-para">
+                The objective is to find the possibility or predict the time of imaging a particular object/place
+                (Lat-Long) on Earth by an Earth observing satellite with given sensor specifications, orbit
+                and attitude definitions under various orbit perturbations.
+            </p>
+
+            <h3>Background :</h3>
+            <p class="fourth-para">
+                Low Earth observation satellites orbit the Earth surface at an altitude of around 300
+                to 1000 km in sun-synchronous polar orbit. The sensors are placed on the satellite platform to take
+                pictures of the Earth’s surface. Users are interested in the opportunities when their area of interest
+                is going to be imaged to meet their application requirements. This
+                software-based application enables them to know the imaging opportunities a priori for their
+                planning. Agile satellite platforms have the capability to image certain areas with tilts which are
+                defined by revisit constraints. This application guides the user for imaging their
+                area of interest taking into account the tilt requirements. This information can be shared with the
+                satellite pass programming personnel.
+            </p>
+
+        </div>
+    </div>
+</main>
+
+{% endblock content %}

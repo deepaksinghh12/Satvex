@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  {% block head %}{% endblock head %}
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+  <link rel="icon" type="image/x-icon" href="{% static 'Satvex.png' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+</head>
+
+<body>
+
+  <!-- ✅ NAVBAR -->
+  <div class="navbar">
+
+    <a class="logo" href="{% url 'list_view' %}">
+      <img src="{% static 'Satvex_nobg.png' %}">
+      <span>SatVex</span>
+    </a>
+
+    <form class="search-container" onsubmit="return false;">
+      <div class="searchInput">
+        <input id="search" type="text" placeholder="Search satellite...">
+        <button class="search-button">Search</button>
+        <ul class="resultBox"></ul>
+      </div>
+    </form>
+
+    <ul class="nav-list">
+      <li><a href="/">Home</a></li>
+      <li><a href="{% url 'multi_satellite_viewer' %}">Multi Viewer</a></li>
+      <li><a href="{% url 'pass_predictor' %}">Pass Predictor</a></li>
+      <li><a href="{% url 'about_page' %}">About</a></li>
+    </ul>
+
+  </div>
+
+  <!-- ✅ PAGE CONTENT -->
+  {% block content %}{% endblock content %}
+
+</body>
+
+<!-- ✅ DARK GLASSMORPH STYLING -->
+<style>
+:root{
+  --bg-1:#050714;
+  --bg-2:#0b0e24;
+  --glass:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.18);
+  --primary:#7c3aed;
+  --secondary:#22d3ee;
+  --text:#eef2ff;
+  --muted:#9ca3af;
+  --radius:16px;
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  background:
+    radial-gradient(circle at top,rgba(124,58,237,0.15),transparent 35%),
+    radial-gradient(circle at bottom,rgba(34,211,238,0.12),transparent 35%),
+    linear-gradient(180deg,var(--bg-2),var(--bg-1));
+  font-family:'Poppins',sans-serif;
+  color:var(--text);
+}
+
+/* ✅ NAVBAR */
+.navbar{
+  height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 30px;
+  background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-decoration:none;
+}
+
+.logo img{width:48px}
+.logo span{
+  font-size:22px;
+  font-weight:700;
+  color:var(--primary);
+}
+
+/* ✅ NAV LINKS */
+.nav-list{
+  display:flex;
+  gap:20px;
+  list-style:none;
+}
+
+.nav-list a{
+  color:#e5e7eb;
+  text-decoration:none;
+  font-size:14px;
+  padding:8px 14px;
+  border-radius:12px;
+  transition:0.3s;
+}
+
+.nav-list a:hover{
+  background:rgba(124,58,237,0.18);
+}
+
+/* ✅ SEARCH */
+.search-container{
+  width:420px;
+  max-width:45%;
+}
+
+.searchInput{
+  width:100%;
+  position:relative;
+}
+
+.searchInput input{
+  width:100%;
+  height:42px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--glass);
+  color:white;
+  padding:10px 100px 10px 18px;
+  outline:none;
+}
+
+.search-button{
+  position:absolute;
+  right:4px;
+  top:4px;
+  bottom:4px;
+  width:92px;
+  border-radius:999px;
+  border:none;
+  background:linear-gradient(90deg,var(--primary),var(--secondary));
+  color:black;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* ✅ SEARCH RESULTS */
+.resultBox{
+  position:absolute;
+  top:52px;
+  width:100%;
+  background:white;
+  color:black;
+  border-radius:10px;
+  display:none;
+  list-style:none;
+  padding:6px;
+}
+
+.searchInput.active .resultBox{display:block}
+
+.resultBox li{
+  padding:8px 12px;
+  border-radius:8px;
+}
+
+.resultBox li:hover{background:#eee}
+
+/* ✅ CESIUM / BLOCK AREA */
+{% comment %} #cesiumContainer{
+  height:440px;
+  width:75%;
+  margin:20px;
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));
+  border:1px solid var(--border);
+  backdrop-filter:blur(10px);
+} {% endcomment %}
+
+/* ✅ TABLE */
+.satellite{
+  width:92%;
+  margin:40px auto;
+  border-collapse:collapse;
+}
+
+.satellite th,.satellite td{
+  padding:12px;
+  border-bottom:1px solid rgba(255,255,255,0.12);
+  text-align:center;
+}
+
+@media(max-width:900px){
+  .nav-list,.search-container{display:none}
+}
+</style>
+
+<!-- ✅ SEARCH + SWIPER LOGIC -->
+<script type="module">
+var swiper = new Swiper(".mySwiper", {
+  spaceBetween: 30,
+  centeredSlides: true,
+  autoplay: { delay: 2500, disableOnInteraction: false }
+});
+
+const searchInput = document.querySelector(".searchInput");
+const input = searchInput.querySelector("input");
+const resultBox = searchInput.querySelector(".resultBox");
+
+input.onkeyup = (e) => {
+  let userData = e.target.value;
+
+  if (userData.length > 0) {
+    let data1 = searchWord(userData);
+    let suggestions = data1['sat_list'];
+    let norad_list = data1['id_dict'];
+
+    let finalData = suggestions.map((data) => {
+      let baseUrl = "{% url 'list_view' %}";
+      let url = baseUrl + `/${norad_list[data]}`;
+      return `<li><a href="${url}">${data}</a></li>`;
+    });
+
+    searchInput.classList.add("active");
+    resultBox.innerHTML = finalData.join("");
+  } else {
+    searchInput.classList.remove("active");
+    resultBox.innerHTML = "";
+  }
+};
+
+function searchWord(word) {
+  let suggestions;
+  $.ajax({
+    url: "{% url 'search_word' %}",
+    type: "GET",
+    async: false,
+    dataType: "json",
+    data: { 'word': word },
+    success: (data) => { suggestions = data; }
+  });
+  return suggestions;
+}
+</script>
+
+</html>

@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="divide">
+
+  <!-- ================= LEFT PANEL ================= -->
+  <div class="tle-data glass-card">
+    <h3 class="sat-name">{{ satellite.name }}</h3>
+
+    <table>
+      <tbody>
+        <tr><td>Norad ID</td><td>{{ data.norad_id }}</td></tr>
+        <tr><td>Launch Year</td><td>20{{ data.launch_year }}</td></tr>
+        <tr><td>First Derivative Mean Motion</td><td>{{ data.first_derivative_mean_motion }}</td></tr>
+        <tr><td>Second Derivative Mean Motion</td><td>{{ data.second_derivative_mean_motion }}</td></tr>
+        <tr><td>Bstar</td><td>{{ data.bstar }}</td></tr>
+        <tr><td>Inclination</td><td>{{ data.inclination }}°</td></tr>
+        <tr><td>RAAN</td><td>{{ data.RAAN }}°</td></tr>
+        <tr><td>Longitude Ascending Node</td><td>{{ data.longitude_of_ascending_node }}°</td></tr>
+        <tr><td>Eccentricity</td><td>{{ data.eccentricity }}</td></tr>
+        <tr><td>Argument of Perigee</td><td>{{ data.argument_of_perigee }}°</td></tr>
+        <tr><td>Argument of Periapsis</td><td>{{ data.argument_of_periapsis }}°</td></tr>
+        <tr><td>Mean Anomaly</td><td>{{ data.mean_anomaly }}</td></tr>
+        <tr><td>Mean Motion</td><td>{{ data.mean_motion }}</td></tr>
+        <tr><td>Semi Major Axis</td><td>{{ data.semi_major_axis }} km</td></tr>
+        <tr><td>Period</td><td>{{ data.period }} minutes</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= RIGHT PANEL ================= -->
+  <div class="satellite_details glass-card">
+
+    <!-- ===== TLE SECTION ===== -->
+    <div class="sat-tle">
+      <h4>Latest TLE (Two Line Element)</h4>
+      <div class="tle">{{ satellite.tle_now }}</div>
+      <div class="last-fetch">
+        <b>Last fetch:</b> {{ satellite.last_tle_update }}
+      </div>
+
+      <div class="btn-row">
+        <button onclick="fetch_latest()" class="buton">Fetch Again</button>
+        <button onclick="compare_tle()" class="buton">Compare TLE</button>
+      </div>
+    </div>
+
+    <!-- ===== SENSOR TABLE ===== -->
+    <div class="sensors">
+      <h4>Available Sensors</h4>
+
+      <table class="t3">
+        <tr>
+          <th>Select</th>
+          <th>Name</th>
+          <th>Resolution Type</th>
+          <th>Resolution [m]</th>
+          <th>Swath [km]</th>
+          <th>Tilting Type</th>
+          <th>Positive Tilt</th>
+          <th>Negative Tilt</th>
+        </tr>
+
+        {% for sensor in sensors %}
+        <tr>
+          <td>
+            <input type="radio" name="sensor" value="{{ sensor.name }}" {% if forloop.first %}checked{% endif %}>
+          </td>
+          <td>{{ sensor.name }}</td>
+          <td>{{ sensor.resolution_type }}</td>
+          <td>{{ sensor.resolution_value }}</td>
+          <td>{{ sensor.swath }}</td>
+          <td>{{ sensor.tilting_type }}</td>
+          <td>{{ sensor.positive_tilting }}</td>
+          <td>{{ sensor.negative_tilting }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <button class="buton track-btn" onclick="get_tracking()">Track 🚀</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+function compare_tle(){
+  window.location.href = "{% url 'compare' satellite.norad_id %}";
+}
+
+function get_tracking() {
+  var ele = document.getElementsByName('sensor');
+  for (let i = 0; i < ele.length; i++) {
+    if (ele[i].checked) {
+      window.location.href = "{% url 'detail_view' satellite.norad_id %}/" + ele[i].value;
+    }
+  }
+}
+
+function fetch_latest(){
+  window.location.href = "{% url 'fetch' satellite.norad_id %}";
+}
+</script>
+
+<!-- ================= CLEAN DARK GLASS CSS (NO GLOW / NO BORDER) ================= -->
+<style>
+
+/* ===== PAGE BACKGROUND ===== */
+.divide {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 40px;
+  gap: 40px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,140,255,.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(0,255,200,.06), transparent 40%),
+    #050b17;
+}
+
+/* ===== COMMON GLASS CARD (NO BORDER / NO GLOW) ===== */
+.glass-card {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 22px;
+  padding: 28px;
+  border: none;
+  box-shadow: none;
+}
+
+/* ===== LEFT PANEL ===== */
+.tle-data {
+  flex: .35;
+}
+
+/* ===== RIGHT PANEL ===== */
+.satellite_details {
+  flex: .65;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+
+/* ===== SATELLITE NAME ===== */
+.sat-name {
+  font-size: 1.6rem;
+  margin-bottom: 20px;
+  color: #4fc3f7;
+}
+
+/* ===== TABLE STYLE ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+  background: rgba(0,0,0,.4);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+th {
+  background: rgba(0,140,255,.18);
+  color: #4fc3f7;
+  font-weight: 600;
+}
+
+td, th {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  font-size: 14px;
+}
+
+/* ===== TLE BOX ===== */
+.sat-tle h4,
+.sensors h4 {
+  color: #4fc3f7;
+  margin-bottom: 14px;
+}
+
+.tle {
+  background: rgba(0,0,0,.55);
+  padding: 12px;
+  border-radius: 10px;
+  font-family: monospace;
+  margin-bottom: 8px;
+}
+
+/* ===== BUTTONS (NO GLOW) ===== */
+.buton {
+  background: linear-gradient(135deg, #0099ff, #005eff);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.buton:hover { 
+  transform: scale(1.03); 
+  filter: brightness(1.1);
+}
+
+.buton:active { 
+  transform: scale(.96); 
+}
+
+.track-btn {
+  margin-top: 16px;
+}
+
+/* ===== BUTTON ROW ===== */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* ===== SENSOR TABLE ===== */
+.t3 th {
+  font-weight: 700;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+  .divide {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .tle-data,
+  .satellite_details {
+    width: 100%;
+  }
+}
+
+</style>
+
+{% endblock content %}

@@ -1,0 +1,345 @@
+
+:root{
+  --navbar-height: 72px;  /* From your base.html navbar height */
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ================================
+   MAIN CONTAINER
+================================ */
+.gradient-background {
+    min-height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    box-sizing: border-box;
+    background: #000000;
+    overflow: hidden;
+}
+
+/* ================================
+   GLASS CONTAINER
+================================ */
+.glass-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ================================
+   GLASS CARD
+================================ */
+.glass-card {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ================================
+   ✅ TRUE FULLSCREEN CESIUM BELOW NAVBAR
+================================ */
+.main-display {
+  position: fixed;
+  top: var(--navbar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: black;
+  z-index: 1;
+}
+/* ================================
+   ✅ TRUE FULLSCREEN CESIUM CANVAS (NO BLUE GLOW)
+================================ */
+#cesiumContainer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  background: black;
+}
+
+/* ================================
+   CONTROLS SECTION (BOTTOM BAR)
+================================ */
+.controls-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    z-index: 1000;
+}
+
+/* ================================
+   DATA SECTIONS
+================================ */
+.difference-section {
+    flex: 1;
+    min-width: 300px;
+}
+
+.location-section {
+    min-width: 300px;
+}
+
+/* ================================
+   INFO TABLE
+================================ */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.info-table td {
+    padding: 8px 12px;
+    font-size: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ================================
+   GLASS SELECT
+================================ */
+.glass-select {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 100, 255, 0.5);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #ffffff;
+    font-size: 16px;
+    outline: none;
+    width: 100%;
+    max-width: 300px;
+}
+
+.glass-select option {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+}
+
+/* ================================
+   SIDE PANELS
+================================ */
+.left-panel, .right-panel {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+
+    background: rgba(0, 0, 0, 0.6);
+    padding: 15px;
+    border-radius: 8px;
+
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+
+    border: 1px solid rgba(0, 100, 255, 0.3);
+    max-width: calc(50vw - 50px);
+    box-sizing: border-box;
+}
+
+.left-panel { left: 20px; }
+.right-panel { right: 20px; }
+
+/* ================================
+   PANEL TEXT
+================================ */
+.panel-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #4fc3f7;
+}
+
+.panel-data {
+    font-size: 14px;
+}
+
+.panel-data div {
+    margin-bottom: 8px;
+}
+
+/* ================================
+   INFO PANEL (BELOW NAVBAR)
+================================ */
+.info-panel {
+    position: fixed;
+    top: calc(var(--navbar-height) + 20px);
+    right: 20px;
+
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    border: 1px solid rgba(0, 100, 255, 0.5);
+    width: 350px;
+    max-height: 80vh;
+    overflow-y: auto;
+    display: none;
+}
+
+.info-panel.visible {
+    display: block;
+}
+
+.info-panel h3 {
+    margin-top: 0;
+    color: #4fc3f7;
+    border-bottom: 1px solid rgba(0, 100, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+/* ================================
+   INFO ROWS
+================================ */
+.info-item {
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.info-label {
+    font-weight: bold;
+    color: #bbbbbb;
+}
+
+.info-value {
+    text-align: right;
+    color: #ffffff;
+}
+
+/* ================================
+   CLOSE BUTTON
+================================ */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+
+    background: rgba(255, 0, 0, 0.7);
+    border: none;
+    color: white;
+
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* ================================
+   ✅ TOGGLE INFO BUTTON (BELOW NAVBAR)
+================================ */
+.toggle-info-btn {
+    position: fixed;
+    top: calc(var(--navbar-height) + 20px);
+    right: 20px;
+
+    z-index: 1000;
+    background: rgba(0, 100, 255, 0.7);
+    border: 1px solid rgba(0, 150, 255, 0.8);
+    color: white;
+
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* ================================
+   2D / 3D BUTTONS
+================================ */
+.view-toggle-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.view-toggle-btn {
+    flex: 1;
+    padding: 8px;
+    background: rgba(50, 50, 50, 0.7);
+    border: 1px solid rgba(100, 100, 100, 0.5);
+    color: #cccccc;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.view-toggle-btn.active {
+    background: rgba(0, 100, 255, 0.7);
+    color: white;
+    border-color: rgba(0, 150, 255, 0.8);
+}
+
+/* ================================
+   ✅ RESPONSIVE FIXES
+================================ */
+@media (max-width: 768px) {
+
+    .controls-section {
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    .difference-section,
+    .location-section {
+        min-width: 100%;
+    }
+
+    .left-panel, .right-panel {
+        position: relative;
+        top: auto;
+        left: auto;
+        right: auto;
+        max-width: 100%;
+        margin: 10px;
+        transform: none;
+    }
+
+    .toggle-info-btn {
+        top: calc(var(--navbar-height) + 10px);
+        right: 10px;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .info-panel {
+        width: 90%;
+        top: calc(var(--navbar-height) + 10px);
+        right: 10px;
+        left: 10px;
+    }
+}

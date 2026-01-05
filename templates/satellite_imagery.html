@@ -1,0 +1,635 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ satellite.name }} - Satellite Imagery & DEM Data{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>{{ satellite.name }} - Satellite Imagery & DEM Data</h2>
+            <p class="text-muted">NORAD ID: {{ satellite.norad_id }}</p>
+        </div>
+    </div>
+
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-globe-asia"></i> <strong>India Coverage Only:</strong> Bhuvan provides imagery only for India region (Lat: 6-37°, Lon: 68-97°). 
+        Imagery requests take ~10 seconds. If satellite is outside coverage or data unavailable, you'll see an error immediately.
+    </div>
+
+    <hr>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Current Position</h5>
+                </div>
+                <div class="card-body">
+                    <div id="position-info">
+                        <p><i class="fas fa-spinner fa-spin"></i> Calculating position...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Data Options</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="dataType">Data Type:</label>
+                        <select id="dataType" class="form-control">
+                            <option value="optical">Optical Imagery</option>
+                            <option value="dem">Digital Elevation Model (DEM)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="layer">Layer:</label>
+                        <select id="layer" class="form-control">
+                            <option value="india3" selected>India Composite ✓ (Recommended)</option>
+                            <option value="resourcesat2">Resourcesat-2 (Limited Coverage)</option>
+                            <option value="cartosat1">Cartosat-1 (Limited Coverage)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="radius">Radius (km):</label>
+                        <input type="number" id="radius" class="form-control" value="50" min="10" max="500">
+                    </div>
+
+                    <hr>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="useManualLocation"> Use Manual Location
+                        </label>
+                    </div>
+                    <div id="manualLocationInputs" style="display:none;">
+                        <div class="form-group">
+                            <label for="manualLat">Latitude:</label>
+                            <input type="number" id="manualLat" class="form-control" value="28.6139" step="0.0001" placeholder="e.g., 28.6139">
+                        </div>
+                        <div class="form-group">
+                            <label for="manualLon">Longitude:</label>
+                            <input type="number" id="manualLon" class="form-control" value="77.2090" step="0.0001" placeholder="e.g., 77.2090">
+                        </div>
+                        <small class="text-muted">Try: Delhi (28.6139, 77.2090), Mumbai (19.0760, 72.8777)</small>
+                    </div>
+
+                    <button id="fetchData" class="btn btn-success btn-block mt-3">
+                        <i class="fas fa-download"></i> Fetch Data
+                    </button>
+
+                    <button id="fetchDEM" class="btn btn-warning btn-block mt-2">
+                        <i class="fas fa-mountain"></i> Fetch DEM
+                    </button>
+
+                    <button id="downloadImage" class="btn btn-primary btn-block mt-2">
+                        <i class="fas fa-download"></i> Download High-Res
+                    </button>
+
+                    <div class="mt-3">
+                        <label class="custom-control custom-checkbox">
+                            <input type="checkbox" id="showWmsLayer" class="custom-control-input" checked>
+                            <span class="custom-control-label">Show WMS Layer on Map</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Available Layers</h5>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    <ul class="list-unstyled">
+                        {% for key, value in available_layers.items %}
+                        <li><strong>{{ key }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Satellite Imagery Display</h5>
+                </div>
+                <div class="card-body">
+                    <div id="loading-indicator" class="text-center" style="display: none;">
+                        <i class="fas fa-spinner fa-spin fa-3x text-primary"></i>
+                        <p class="mt-2">Loading data from Bhuvan...</p>
+                    </div>
+
+                    <div id="imagery-container" class="text-center">
+                        <p class="text-muted">Click "Fetch Data" or "Fetch DEM" to load satellite imagery</p>
+                        <img id="satellite-image" src="" alt="Satellite imagery will appear here" 
+                             style="max-width: 100%; display: none;" class="img-fluid border">
+                    </div>
+
+                    <div id="metadata-container" class="mt-3" style="display: none;">
+                        <h6>Metadata:</h6>
+                        <div id="metadata-content" class="bg-light p-3 rounded">
+                            <!-- Metadata will be displayed here -->
+                        </div>
+                    </div>
+
+                    <div id="error-container" class="alert alert-danger mt-3" style="display: none;">
+                        <!-- Error messages will appear here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Location Map</h5>
+                </div>
+                <div class="card-body">
+                    <div id="map" style="height: 400px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">About Satellite Data Sources</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Bhuvan (ISRO/NRSC)</h6>
+                    <p>Bhuvan is India's geoportal providing satellite imagery and geospatial services from ISRO.</p>
+                    
+                    <h6>Available Data Types:</h6>
+                    <ul>
+                        <li><strong>Optical Imagery:</strong> High-resolution satellite images from Resourcesat, Cartosat satellites</li>
+                        <li><strong>DEM (Digital Elevation Model):</strong> Terrain elevation data</li>
+                        <li><strong>Thematic Layers:</strong> Land use, forest cover, water bodies, etc.</li>
+                    </ul>
+
+                    <p><a href="https://bhuvan.nrsc.gov.in" target="_blank" class="btn btn-sm btn-primary">
+                        <i class="fas fa-external-link-alt"></i> Visit Bhuvan Portal
+                    </a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .card-header h5 {
+        margin: 0;
+    }
+    
+    #satellite-image {
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    #metadata-content {
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+</style>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<script>
+    let map;
+    let marker;
+    let currentPosition = null;
+
+    // Initialize map
+    function initMap() {
+        map = L.map('map').setView([20, 78], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+    }
+
+    // Add Bhuvan WMS layer via proxy to avoid CORS issues
+    const bhuvanProxyUrl = '/proxy/wms';
+    let bhuvanWmsLayer = null;
+
+    function addBhuvanLayer(layerName = 'resourcesat2') {
+        if (bhuvanWmsLayer) {
+            map.removeLayer(bhuvanWmsLayer);
+        }
+        bhuvanWmsLayer = L.tileLayer.wms(bhuvanProxyUrl, {
+            layers: layerName,
+            format: 'image/png',
+            transparent: true,
+            version: '1.1.1',
+            attribution: 'Bhuvan / NRSC'
+        });
+        bhuvanWmsLayer.addTo(map);
+    }
+
+    // Update position display
+    function updatePosition() {
+        // Fetch current satellite position via the data endpoint
+        $.ajax({
+            url: `/data/{{ satellite.norad_id }}`,
+            method: 'GET',
+            data: { 
+                cur_loc_lat: 0,  // dummy values
+                cur_loc_lon: 0 
+            },
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(response) {
+                if (response.context) {
+                    const pos = response.context;
+                    $('#position-info').html(`
+                        <p><strong>Latitude:</strong> ${pos.lat.toFixed(4)}°</p>
+                        <p><strong>Longitude:</strong> ${pos.lon.toFixed(4)}°</p>
+                        <p><strong>Height:</strong> ${pos.height.toFixed(2)} km</p>
+                    `);
+                    
+                    // Update map center
+                    if (marker) {
+                        marker.setLatLng([pos.lat, pos.lon]);
+                    } else {
+                        marker = L.marker([pos.lat, pos.lon]).addTo(map)
+                            .bindPopup('{{ satellite.name }}');
+                    }
+                    map.setView([pos.lat, pos.lon], 5);
+                }
+            },
+            error: function() {
+                $('#position-info').html('<p class="text-danger">Could not fetch position</p>');
+            }
+        });
+    }
+
+    // Fetch satellite imagery
+    $('#fetchData').click(function() {
+        const radius = $('#radius').val();
+        const layer = $('#layer').val();
+        
+        console.log('Fetching imagery...', { radius, layer });
+        
+        $('#loading-indicator').show();
+        $('#imagery-container img').hide();
+        $('#metadata-container').hide();
+        $('#error-container').hide();
+
+        $.ajax({
+            url: `/api/sat/{{ satellite.norad_id }}/imagery`,
+            method: 'GET',
+            data: { radius: radius },
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(response) {
+                console.log('Response received:', response);
+                $('#loading-indicator').hide();
+                
+                if (response.success && response.imagery_data) {
+                    const imageData = response.imagery_data.image_data;
+                    console.log('Image data length:', imageData.length);
+                    $('#satellite-image').attr('src', 'data:image/png;base64,' + imageData);
+                    $('#satellite-image').show();
+                    
+                    // Update position on map
+                    const pos = response.satellite_position;
+                    currentPosition = pos;
+                    
+                    if (marker) {
+                        marker.setLatLng([pos.lat, pos.lon]);
+                    } else {
+                        marker = L.marker([pos.lat, pos.lon]).addTo(map);
+                    }
+                    map.setView([pos.lat, pos.lon], 8);
+                    
+                    // Display metadata
+                    $('#metadata-content').html(`
+                        <strong>Satellite Position:</strong><br>
+                        Latitude: ${pos.lat}°<br>
+                        Longitude: ${pos.lon}°<br>
+                        Height: ${pos.height_km} km<br><br>
+                        <strong>Imagery Details:</strong><br>
+                        Resolution: ${response.imagery_data.resolution} pixels<br>
+                        Satellite Source: ${response.imagery_data.satellite}<br>
+                        Timestamp: ${response.timestamp}
+                    `);
+                    $('#metadata-container').show();
+                    
+                    // Update position info
+                    $('#position-info').html(`
+                        <p><strong>Latitude:</strong> ${pos.lat}°</p>
+                        <p><strong>Longitude:</strong> ${pos.lon}°</p>
+                        <p><strong>Height:</strong> ${pos.height_km} km</p>
+                    `);
+                } else {
+                    $('#error-container').text('Failed to fetch imagery: ' + (response.error || 'Unknown error')).show();
+                }
+            },
+            error: function(xhr) {
+                $('#loading-indicator').hide();
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'Network error';
+                $('#error-container').text('Error: ' + error).show();
+            }
+        });
+    });
+
+    // Fetch DEM data
+    $('#fetchDEM').click(function() {
+        const radius = $('#radius').val();
+        
+        $('#loading-indicator').show();
+        $('#imagery-container img').hide();
+        $('#metadata-container').hide();
+        $('#error-container').hide();
+
+        $.ajax({
+            url: `/api/sat/{{ satellite.norad_id }}/dem`,
+            method: 'GET',
+            data: { radius: radius },
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(response) {
+                $('#loading-indicator').hide();
+                
+                if (response.success && response.dem_data) {
+                    const imageData = response.dem_data.image_data;
+                    $('#satellite-image').attr('src', 'data:image/png;base64,' + imageData);
+                    $('#satellite-image').show();
+                    
+                    // Update position on map
+                    const pos = response.satellite_position;
+                    currentPosition = pos;
+                    
+                    if (marker) {
+                        marker.setLatLng([pos.lat, pos.lon]);
+                    } else {
+                        marker = L.marker([pos.lat, pos.lon]).addTo(map);
+                    }
+                    map.setView([pos.lat, pos.lon], 8);
+                    
+                    // Display metadata
+                    $('#metadata-content').html(`
+                        <strong>Satellite Position:</strong><br>
+                        Latitude: ${pos.lat}°<br>
+                        Longitude: ${pos.lon}°<br>
+                        Height: ${pos.height_km} km<br><br>
+                        <strong>DEM Details:</strong><br>
+                        Resolution: ${response.dem_data.resolution} pixels<br>
+                        Radius: ${response.dem_data.radius_deg}° (≈${radius} km)<br>
+                        Timestamp: ${response.timestamp}
+                    `);
+                    $('#metadata-container').show();
+                    
+                    // Update position info
+                    $('#position-info').html(`
+                        <p><strong>Latitude:</strong> ${pos.lat}°</p>
+                        <p><strong>Longitude:</strong> ${pos.lon}°</p>
+                        <p><strong>Height:</strong> ${pos.height_km} km</p>
+                    `);
+                } else {
+                    $('#error-container').text('Failed to fetch DEM: ' + (response.error || 'Unknown error')).show();
+                }
+            },
+            error: function(xhr) {
+                $('#loading-indicator').hide();
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'Network error';
+                $('#error-container').text('Error: ' + error).show();
+            }
+        });
+    });
+
+    // Toggle manual location inputs
+    $('#useManualLocation').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#manualLocationInputs').slideDown();
+        } else {
+            $('#manualLocationInputs').slideUp();
+        }
+    });
+
+    // Layer selector change handler
+    $('#layer').on('change', function() {
+        const selectedLayer = $(this).val();
+        addBhuvanLayer(selectedLayer);
+    });
+
+    // Toggle WMS layer visibility
+    $('#showWmsLayer').on('change', function() {
+        if ($(this).is(':checked')) {
+            if (bhuvanWmsLayer && !map.hasLayer(bhuvanWmsLayer)) {
+                bhuvanWmsLayer.addTo(map);
+            } else {
+                addBhuvanLayer($('#layer').val());
+            }
+        } else {
+            if (bhuvanWmsLayer && map.hasLayer(bhuvanWmsLayer)) {
+                map.removeLayer(bhuvanWmsLayer);
+            }
+        }
+    });
+
+    // Fetch imagery for manual location
+    function fetchManualLocationImagery() {
+        const lat = parseFloat($('#manualLat').val());
+        const lon = parseFloat($('#manualLon').val());
+        const radius = $('#radius').val();
+        const layer = $('#layer').val();
+        
+        console.log('Fetching imagery for manual location:', { lat, lon, radius, layer });
+        
+        $('#loading-indicator').show();
+        $('#imagery-container img').hide();
+        $('#metadata-container').hide();
+        $('#error-container').hide();
+        
+        $.ajax({
+            url: '/api/location/imagery',
+            method: 'GET',
+            data: { lat, lon, radius, type: 'optical', layer },
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(response) {
+                console.log('Manual location response:', response);
+                $('#loading-indicator').hide();
+                
+                if (response.success && response.data && response.data.image_data) {
+                    $('#satellite-image').attr('src', 'data:image/png;base64,' + response.data.image_data);
+                    $('#satellite-image').show();
+                    
+                    // Update map
+                    if (marker) {
+                        marker.setLatLng([lat, lon]);
+                    } else {
+                        marker = L.marker([lat, lon]).addTo(map).bindPopup('Manual Location');
+                    }
+                    map.setView([lat, lon], 8);
+                    
+                    $('#metadata-content').html(`
+                        <strong>Manual Location:</strong><br>
+                        Latitude: ${lat}°<br>
+                        Longitude: ${lon}°<br><br>
+                        <strong>Imagery Details:</strong><br>
+                        Layer: ${layer}<br>
+                        Resolution: ${response.data.resolution} pixels<br>
+                        Timestamp: ${response.timestamp}
+                    `);
+                    $('#metadata-container').show();
+                } else {
+                    $('#error-container').text('Failed to fetch imagery: ' + (response.error || 'Unknown error')).show();
+                }
+            },
+            error: function(xhr) {
+                $('#loading-indicator').hide();
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'Network error';
+                $('#error-container').text('Error: ' + error).show();
+            }
+        });
+    }
+
+    // Download high-res imagery
+    $('#downloadImage').click(function() {
+        const radius = $('#radius').val();
+        const layer = $('#layer').val();
+        
+        // Check if using manual location
+        if ($('#useManualLocation').is(':checked')) {
+            const lat = parseFloat($('#manualLat').val());
+            const lon = parseFloat($('#manualLon').val());
+            
+            if (!lat || !lon) {
+                alert('Please enter valid latitude and longitude for manual location.');
+                return;
+            }
+            
+            // For manual location, we'd need a different endpoint
+            alert('Manual location download not implemented yet. Use "Fetch Data" to view imagery, then right-click and "Save Image As".');
+            return;
+        }
+        
+        // Show loading message
+        $('#loading-indicator').show();
+        $('#error-container').hide();
+        
+        const url = `/api/sat/{{ satellite.norad_id }}/download?radius=${radius}&layer=${layer}&format=png`;
+        
+        // Try to fetch as JSON first to check for errors
+        $.ajax({
+            url: url,
+            method: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                // If we get JSON back, it's an error
+                $('#loading-indicator').hide();
+                let errorMsg = data.error || 'Download failed';
+                if (data.message) {
+                    errorMsg += '<br><small>' + data.message + '</small>';
+                }
+                if (data.suggestion) {
+                    errorMsg += '<br><small class="text-info">' + data.suggestion + '</small>';
+                }
+                $('#error-container').html(errorMsg).show();
+            },
+            error: function(xhr) {
+                $('#loading-indicator').hide();
+                
+                // If it's not JSON (i.e., it's binary image data), trigger download
+                if (xhr.status === 200 || !xhr.responseJSON) {
+                    window.location.href = url;
+                } else {
+                    // Show error
+                    const error = xhr.responseJSON ? xhr.responseJSON.error : 'Download failed';
+                    $('#error-container').html('Error: ' + error).show();
+                }
+            }
+        });
+    });
+    
+    // Modify Fetch Data to check manual location
+    $('#fetchData').off('click').on('click', function() {
+        if ($('#useManualLocation').is(':checked')) {
+            fetchManualLocationImagery();
+        } else {
+            fetchSatelliteImagery();
+        }
+    });
+    
+    // Original fetch satellite imagery function
+    function fetchSatelliteImagery() {
+        const radius = $('#radius').val();
+        const layer = $('#layer').val();
+        
+        console.log('Fetching imagery...', { radius, layer });
+        
+        $('#loading-indicator').show();
+        $('#imagery-container img').hide();
+        $('#metadata-container').hide();
+        $('#error-container').hide();
+
+        $.ajax({
+            url: `/api/sat/{{ satellite.norad_id }}/imagery`,
+            method: 'GET',
+            data: { radius: radius },
+            headers: {'X-Requested-With': 'XMLHttpRequest'},
+            success: function(response) {
+                console.log('Response received:', response);
+                $('#loading-indicator').hide();
+                
+                if (response.success && response.imagery_data) {
+                    const imageData = response.imagery_data.image_data;
+                    console.log('Image data length:', imageData.length);
+                    $('#satellite-image').attr('src', 'data:image/png;base64,' + imageData);
+                    $('#satellite-image').show();
+                    
+                    const pos = response.satellite_position;
+                    currentPosition = pos;
+                    
+                    if (marker) {
+                        marker.setLatLng([pos.lat, pos.lon]);
+                    } else {
+                        marker = L.marker([pos.lat, pos.lon]).addTo(map);
+                    }
+                    map.setView([pos.lat, pos.lon], 8);
+                    
+                    $('#metadata-content').html(`
+                        <strong>Satellite Position:</strong><br>
+                        Latitude: ${pos.lat}°<br>
+                        Longitude: ${pos.lon}°<br>
+                        Height: ${pos.height_km} km<br><br>
+                        <strong>Imagery Details:</strong><br>
+                        Resolution: ${response.imagery_data.resolution} pixels<br>
+                        Satellite Source: ${response.imagery_data.satellite}<br>
+                        Timestamp: ${response.timestamp}
+                    `);
+                    $('#metadata-container').show();
+                    
+                    $('#position-info').html(`
+                        <p><strong>Latitude:</strong> ${pos.lat}°</p>
+                        <p><strong>Longitude:</strong> ${pos.lon}°</p>
+                        <p><strong>Height:</strong> ${pos.height_km} km</p>
+                    `);
+                } else {
+                    $('#error-container').text('Failed to fetch imagery: ' + (response.error || 'Unknown error')).show();
+                }
+            },
+            error: function(xhr) {
+                $('#loading-indicator').hide();
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'Network error';
+                $('#error-container').text('Error: ' + error).show();
+            }
+        });
+    }
+
+    // Initialize when page loads
+    $(document).ready(function() {
+        initMap();
+        updatePosition();
+        // add default bhuvan layer
+        addBhuvanLayer($('#layer').val());
+    });
+</script>
+{% endblock %}

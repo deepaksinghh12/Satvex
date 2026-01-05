@@ -1,0 +1,815 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head %}
+<meta charset="utf-8">
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.107.1/Build/Cesium/Cesium.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<link href="https://cesium.com/downloads/cesiumjs/releases/1.107.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+{% endblock head %}
+
+{% block content %}
+
+<style>
+/* ================= BASE DARK DASHBOARD ================= */
+body{
+    background: radial-gradient(circle at top, #0d1020, #02030a 75%);
+    margin:0;
+    font-family:'Segoe UI',system-ui,sans-serif;
+    color:#e6e6e6;
+}
+
+.dashboard-wrap{
+    padding:24px;
+}
+
+/* ================= GLASS CARD ================= */
+.glass{
+    background:rgba(255,255,255,0.08);
+    backdrop-filter: blur(16px);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.6);
+}
+
+/* ================= HEADER PANEL ================= */
+.selection-panel{
+    padding:26px;
+    margin-bottom:22px;
+}
+
+.selection-panel h2{
+    margin:0 0 20px;
+    font-size:24px;
+    color:#ffffff;
+    font-weight:700;
+}
+
+/* ================= SATELLITE CHECKBOX GRID ================= */
+.satellite-checkboxes{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+    gap:14px;
+    margin-bottom:20px;
+}
+
+.satellite-checkbox{
+    background:rgba(255,255,255,0.05);
+    padding:14px 16px;
+    border-radius:12px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    transition:0.25s ease;
+    border:1px solid rgba(255,255,255,0.05);
+}
+
+.satellite-checkbox:hover{
+    background:rgba(255,255,255,0.12);
+    transform:translateY(-2px);
+}
+
+.satellite-checkbox input{
+    margin-right:12px;
+    transform:scale(1.1);
+}
+
+.satellite-checkbox span{
+    font-size:15px;
+    font-weight:600;
+    color:#eaeaea;
+}
+
+/* ================= ACTION BUTTONS ================= */
+.action-buttons{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.btn-primary,
+.btn-secondary{
+    padding:12px 30px;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    transition:0.25s ease;
+}
+
+.btn-primary{
+    background:#1f2937;
+    color:white;
+}
+
+.btn-primary:hover{
+    background:#374151;
+    transform:translateY(-1px);
+}
+
+.btn-secondary{
+    background:rgba(255,255,255,0.12);
+    color:white;
+}
+
+.btn-secondary:hover{
+    background:rgba(255,255,255,0.2);
+}
+
+/* ================= MAIN VIEW ================= */
+.viewer-container{
+    height:calc(100vh - 240px);
+    border-radius:18px;
+    overflow:hidden;
+    position:relative;
+}
+
+#cesiumContainer{
+    width:100%;
+    height:100%;
+}
+
+/* ================= INFO PANEL ================= */
+.info-panel{
+    position:absolute;
+    top:16px;
+    right:16px;
+    width:320px;
+    background:rgba(20,20,30,0.85);
+    backdrop-filter: blur(12px);
+    border-radius:16px;
+    padding:18px;
+    color:#f1f1f1;
+    max-height:calc(100% - 32px);
+    overflow-y:auto;
+    z-index:1000;
+    border:1px solid rgba(255,255,255,0.12);
+}
+
+.info-panel h3{
+    margin:0 0 14px;
+    font-size:18px;
+    font-weight:700;
+    border-bottom:1px solid rgba(255,255,255,0.15);
+    padding-bottom:10px;
+}
+
+.no-satellites{
+    text-align:center;
+    opacity:0.7;
+    padding:15px;
+}
+
+/* ================= SATELLITE LIST ITEM ================= */
+.satellite-item{
+    background:rgba(255,255,255,0.05);
+    border-radius:12px;
+    padding:12px;
+    margin-bottom:10px;
+    border:1px solid rgba(255,255,255,0.06);
+}
+
+.sat-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:6px;
+}
+
+.sat-color{
+    width:16px;
+    height:16px;
+    border-radius:50%;
+}
+
+.btn-remove{
+    background:#dc2626;
+    color:white;
+    border:none;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:14px;
+    transition:0.2s ease;
+}
+
+.btn-remove:hover{
+    background:#b91c1c;
+    transform:scale(1.05);
+}
+
+/* ================= SAT DATA ================= */
+.sat-data{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    font-size:12px;
+    font-family:'Courier New', monospace;
+    opacity:0.9;
+}
+
+/* ================= LEGEND ================= */
+.legend{
+    position:absolute;
+    bottom:16px;
+    left:16px;
+    background:rgba(20,20,30,0.85);
+    backdrop-filter: blur(12px);
+    padding:16px;
+    border-radius:16px;
+    color:white;
+    z-index:1000;
+    border:1px solid rgba(255,255,255,0.12);
+}
+
+.legend h4{
+    margin:0 0 10px;
+    font-size:14px;
+    font-weight:700;
+}
+
+.legend-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:8px;
+    font-size:13px;
+}
+
+.color-box{
+    width:18px;
+    height:18px;
+    border-radius:4px;
+    border:1px solid rgba(255,255,255,0.4);
+}
+</style>
+
+<div class="dashboard-wrap">
+
+    <!-- ✅ Selection Panel -->
+    <div class="selection-panel glass">
+        <h2>🛰️ Multi-Satellite Control Panel</h2>
+
+        <div class="satellite-checkboxes">
+            {% for sat in satellites %}
+            <label class="satellite-checkbox">
+                <input type="checkbox" class="sat-checkbox" data-norad="{{ sat.norad_id }}" data-name="{{ sat.name }}">
+                <span>{{ sat.name }}</span>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-primary" onclick="loadSelectedSatellites()">🚀 Load Satellites</button>
+            <button class="btn-secondary" onclick="clearAllSatellites()">🗑️ Clear</button>
+            <button class="btn-secondary" onclick="selectAll()">✅ Select All</button>
+        </div>
+    </div>
+
+    <!-- ✅ Viewer -->
+    <div class="viewer-container glass">
+        <div id="cesiumContainer"></div>
+
+        <!-- ✅ Info Panel -->
+        <div class="info-panel">
+            <h3>📡 Active Satellites</h3>
+            <div id="satellite-list"></div>
+        </div>
+
+        <!-- ✅ Legend -->
+        <div class="legend">
+            <h4>🎨 Color Legend</h4>
+            <div class="legend-item"><span class="color-box" style="background:red;"></span> RISAT-2</div>
+            <div class="legend-item"><span class="color-box" style="background:green;"></span> RESOURCESAT-2</div>
+            <div class="legend-item"><span class="color-box" style="background:blue;"></span> CARTOSAT-3</div>
+            <div class="legend-item"><span class="color-box" style="background:yellow;"></span> CARTOSAT-2F</div>
+            <div class="legend-item"><span class="color-box" style="background:magenta;"></span> RESOURCESAT-2A</div>
+            <div class="legend-item"><span class="color-box" style="background:cyan;"></span> ADITYA-L1</div>
+        </div>
+    </div>
+
+</div>
+
+  <script type="module">
+    // Color mapping for satellites
+    const satelliteColors = {
+      'RISAT-2': Cesium.Color.RED,
+      'RESOURCESAT-2': Cesium.Color.GREEN,
+      'CARTOSAT-3': Cesium.Color.BLUE,
+      'CARTOSAT-2F': Cesium.Color.YELLOW,
+      'RESOURCESAT-2A': Cesium.Color.MAGENTA,
+      'ADITYA-L1': Cesium.Color.CYAN,
+    };
+
+    // Get color for satellite
+    function getSatelliteColor(name) {
+      for (let key in satelliteColors) {
+        if (name.toUpperCase().includes(key.toUpperCase())) {
+          return satelliteColors[key];
+        }
+      }
+      return Cesium.Color.WHITE;
+    }
+
+    // Cesium Viewer Setup
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI4ZjM0YTMzOC04NTIwLTQwMTItYTg5Ni0wOTFhNjlkZTJiYzIiLCJpZCI6MTUzNzcwLCJpYXQiOjE2ODkyNjg2NjV9.JHjxyoN8RovBonODf3w6B654ZNhxvoqCbAqAsKZrxBY';
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrain: Cesium.Terrain.fromWorldTerrain(),
+      shouldAnimate: true,
+    });
+
+    // Store loaded satellites
+    let loadedSatellites = {};
+    let updateIntervals = {};
+
+    // Function to fetch satellite data buffer
+    async function fetchSatelliteData(noradId) {
+      try {
+        const response = await $.ajax({
+          url: `/databuffer/${noradId}`,
+          type: "GET",
+          dataType: "json",
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        return response.context;
+      } catch (error) {
+        console.error(`Error fetching data for ${noradId}:`, error);
+        return null;
+      }
+    }
+
+    // Function to load a single satellite
+    async function loadSatellite(noradId, name) {
+      if (loadedSatellites[noradId]) {
+        console.log(`Satellite ${name} already loaded`);
+        return;
+      }
+
+      const data = await fetchSatelliteData(noradId);
+      if (!data) {
+        alert(`Failed to load data for ${name}`);
+        return;
+      }
+
+      const len_data = Object.keys(data).length - 1;
+      const start = Cesium.JulianDate.fromIso8601(data[0].iso_string);
+      const stop = Cesium.JulianDate.fromIso8601(data[len_data - 1].iso_string);
+
+      // Create position property
+      const positionsOverTime = new Cesium.SampledPositionProperty();
+      for (let i = 0; i < len_data; i++) {
+        const instance = data[i];
+        const time = Cesium.JulianDate.fromIso8601(instance.iso_string);
+        const position = Cesium.Cartesian3.fromDegrees(
+          instance.longitude,
+          instance.latitude,
+          instance.height * 1000
+        );
+        positionsOverTime.addSample(time, position);
+      }
+
+      const color = getSatelliteColor(name);
+
+      // Create satellite entity
+      const satelliteEntity = viewer.entities.add({
+        name: name,
+        availability: new Cesium.TimeIntervalCollection([
+          new Cesium.TimeInterval({ start: start, stop: stop })
+        ]),
+        position: positionsOverTime,
+        point: {
+          pixelSize: 10,
+          color: color,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2
+        },
+        label: {
+          text: name,
+          font: '14pt sans-serif',
+          fillColor: color,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -15)
+        },
+        path: {
+          resolution: 1,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            glowPower: 0.3,
+            color: color
+          }),
+          width: 3
+        }
+      });
+
+      // Create orbit polyline
+      const fixedPolyline = Cesium.Cartesian3.fromDegreesArrayHeights(data['geodetic']);
+      const orbitLine = viewer.entities.add({
+        name: `${name}_orbit`,
+        polyline: {
+          positions: new Cesium.CallbackProperty(function (time, result) {
+            const icrfToFixed = Cesium.Transforms.computeIcrfToFixedMatrix(time);
+            if (Cesium.defined(icrfToFixed)) {
+              let pos = [];
+              for (let i = 0; i < fixedPolyline.length; i++) {
+                let new_point = Cesium.Matrix3.multiplyByVector(
+                  icrfToFixed,
+                  fixedPolyline[i],
+                  new Cesium.Cartesian3()
+                );
+                var cartographic = Cesium.Cartographic.fromCartesian(new_point);
+                pos = pos.concat(
+                  Cesium.Math.toDegrees(cartographic.longitude),
+                  Cesium.Math.toDegrees(cartographic.latitude),
+                  cartographic.height
+                );
+              }
+              return Cesium.Cartesian3.fromDegreesArrayHeights(pos);
+            }
+          }, false),
+          width: 2,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            glowPower: 0.2,
+            color: color.withAlpha(0.5)
+          })
+        }
+      });
+
+      // Store references
+      loadedSatellites[noradId] = {
+        name: name,
+        entity: satelliteEntity,
+        orbitLine: orbitLine,
+        positionsOverTime: positionsOverTime,
+        color: color
+      };
+
+      // Start live data updates
+      startLiveUpdates(noradId, name);
+
+      updateSatelliteList();
+    }
+
+    // Function to start live data updates
+    function startLiveUpdates(noradId, name) {
+      if (updateIntervals[noradId]) {
+        clearInterval(updateIntervals[noradId]);
+      }
+
+      updateIntervals[noradId] = setInterval(async () => {
+        try {
+          const response = await $.ajax({
+            url: `/data/${noradId}`,
+            type: "GET",
+            dataType: "json",
+            data: { cur_loc_lat: 0, cur_loc_lon: 0 },
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          // Update info in the panel
+          updateSatelliteInfo(noradId, response.context);
+        } catch (error) {
+          console.error(`Error updating ${name}:`, error);
+        }
+      }, 2000);
+    }
+
+    // Function to update satellite info display
+    function updateSatelliteInfo(noradId, data) {
+      const infoDiv = document.getElementById(`sat-info-${noradId}`);
+      if (infoDiv) {
+        infoDiv.innerHTML = `
+          <div class="sat-data">
+            <span>Lat: ${parseFloat(data.lat).toFixed(4)}°</span>
+            <span>Lon: ${parseFloat(data.lon).toFixed(4)}°</span>
+            <span>Alt: ${parseFloat(data.height).toFixed(2)} km</span>
+          </div>
+        `;
+      }
+    }
+
+    // Function to remove a satellite
+    function removeSatellite(noradId) {
+      if (!loadedSatellites[noradId]) return;
+
+      const sat = loadedSatellites[noradId];
+      viewer.entities.remove(sat.entity);
+      viewer.entities.remove(sat.orbitLine);
+
+      if (updateIntervals[noradId]) {
+        clearInterval(updateIntervals[noradId]);
+        delete updateIntervals[noradId];
+      }
+
+      delete loadedSatellites[noradId];
+      updateSatelliteList();
+    }
+
+    // Function to update the satellite list display
+    function updateSatelliteList() {
+      const listDiv = document.getElementById('satellite-list');
+      if (Object.keys(loadedSatellites).length === 0) {
+        listDiv.innerHTML = '<p class="no-satellites">No satellites loaded. Select satellites above.</p>';
+        return;
+      }
+
+      let html = '';
+      for (let noradId in loadedSatellites) {
+        const sat = loadedSatellites[noradId];
+        const colorHex = sat.color.toCssHexString();
+        html += `
+          <div class="satellite-item">
+            <div class="sat-header">
+              <span class="sat-color" style="background: ${colorHex};"></span>
+              <strong>${sat.name}</strong>
+              <button class="btn-remove" onclick="removeSatellite(${noradId})">✕</button>
+            </div>
+            <div id="sat-info-${noradId}" class="sat-info">Loading...</div>
+          </div>
+        `;
+      }
+      listDiv.innerHTML = html;
+    }
+
+    // Global functions for button handlers
+    window.loadSelectedSatellites = async function() {
+      const checkboxes = document.querySelectorAll('.sat-checkbox:checked');
+      if (checkboxes.length === 0) {
+        alert('Please select at least one satellite');
+        return;
+      }
+
+      for (let checkbox of checkboxes) {
+        const noradId = checkbox.dataset.norad;
+        const name = checkbox.dataset.name;
+        await loadSatellite(noradId, name);
+      }
+
+      // Zoom to show all satellites
+      if (Object.keys(loadedSatellites).length > 0) {
+        viewer.zoomTo(viewer.entities);
+      }
+    };
+
+    window.removeSatellite = function(noradId) {
+      removeSatellite(noradId);
+      // Uncheck the checkbox
+      const checkbox = document.querySelector(`.sat-checkbox[data-norad="${noradId}"]`);
+      if (checkbox) checkbox.checked = false;
+    };
+
+    window.clearAllSatellites = function() {
+      const noradIds = Object.keys(loadedSatellites);
+      noradIds.forEach(noradId => removeSatellite(noradId));
+      
+      // Uncheck all checkboxes
+      document.querySelectorAll('.sat-checkbox').forEach(cb => cb.checked = false);
+    };
+
+    window.selectAll = function() {
+      const checkboxes = document.querySelectorAll('.sat-checkbox');
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      checkboxes.forEach(cb => cb.checked = !allChecked);
+    };
+
+    // Initialize
+    viewer.scene.globe.enableLighting = true;
+    viewer.clock.shouldAnimate = true;
+
+    let initialized = false;
+    viewer.scene.globe.tileLoadProgressEvent.addEventListener(() => {
+      if (!initialized && viewer.scene.globe.tilesLoaded === true) {
+        initialized = true;
+        viewer.scene.camera.zoomOut(7000000);
+      }
+    });
+
+    updateSatelliteList();
+  </script>
+</body>
+
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .selection-panel {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+  }
+
+  .selection-panel h2 {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+  }
+
+  .satellite-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .satellite-checkbox {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 12px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;
+  }
+
+  .satellite-checkbox:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .satellite-checkbox input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+
+  .satellite-checkbox span {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary, .btn-secondary {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-primary {
+    background: #28a745;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .viewer-container {
+    display: flex;
+    height: calc(100vh - 250px);
+    position: relative;
+  }
+
+  #cesiumContainer {
+    flex: 1;
+    width: 100%;
+  }
+
+  .info-panel {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    max-height: calc(100% - 20px);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 15px;
+    color: white;
+    overflow-y: auto;
+    z-index: 1000;
+  }
+
+  .info-panel h3 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+  }
+
+  .no-satellites {
+    color: #aaa;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+  }
+
+  .satellite-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .sat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .sat-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .sat-header strong {
+    flex: 1;
+    font-size: 14px;
+  }
+
+  .btn-remove {
+    background: rgba(255, 0, 0, 0.6);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+
+  .btn-remove:hover {
+    background: rgba(255, 0, 0, 0.9);
+    transform: scale(1.1);
+  }
+
+  .sat-data {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #ddd;
+  }
+
+  .sat-data span {
+    font-family: 'Courier New', monospace;
+  }
+
+  .legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    z-index: 1000;
+  }
+
+  .legend h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .color-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid white;
+  }
+</style>
+{% endblock content %}
